@@ -40,6 +40,7 @@ pip install -r requirements.txt
 
 # Install Node.js sitemap generator
 cd sitemap_generator/simple_generator
+npm init -y
 npm install sitemap-generator
 cd ../..
 ```
@@ -118,19 +119,9 @@ The status.md file shows:
 ### Sitemap Generation Issues
 If the sitemap generator freezes:
 
-1. Navigate to the generator directory:
+Test the generator directly:
 ```bash
 cd sitemap_generator/simple_generator
-```
-
-2. Reinstall dependencies:
-```bash
-rm -rf node_modules package-lock.json
-npm install
-```
-
-3. Test the generator directly:
-```bash
 node generate-sitemap.js
 ```
 
