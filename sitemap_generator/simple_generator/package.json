@@ -1,0 +1,16 @@
+{
+  "name": "simple-sitemap-generator",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "sitemap-generator": "^8.5.1"
+  },
+  "scripts": {
+    "generate": "node generate-sitemap.js"
+  },
+  "main": "generate-sitemap.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
