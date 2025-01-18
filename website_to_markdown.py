@@ -209,18 +209,19 @@ def check_sitemap_exists(base_url: str) -> bool:
 def generate_sitemap(base_url: str) -> str:
     """Generate sitemap.xml using Node.js script."""
     print("Generating sitemap.xml...")
-    sitemap_dir = os.path.join(os.path.dirname(__file__), 'sitemap')
-    os.makedirs(sitemap_dir, exist_ok=True)
+    generator_dir = os.path.join(os.path.dirname(__file__), 'sitemap_generator', 'simple_generator')
     
     try:
+        # Run generator from its directory
         result = subprocess.run(
             ['node', 'generate-sitemap.js'],
             capture_output=True,
             text=True,
-            check=True
+            check=True,
+            cwd=generator_dir  # Set working directory for the script
         )
         print(result.stdout)
-        return os.path.join(sitemap_dir, 'sitemap.xml')
+        return os.path.join(generator_dir, 'sitemap.xml')
     except subprocess.CalledProcessError as e:
         print(f"Error generating sitemap: {e.stderr}")
         raise
@@ -254,7 +255,12 @@ async def main():
 
 def update_generator_url(url: str):
     """Update the URL in generate-sitemap.js."""
-    generator_path = os.path.join(os.path.dirname(__file__), 'generate-sitemap.js')
+    generator_path = os.path.join(
+        os.path.dirname(__file__), 
+        'sitemap_generator', 
+        'simple_generator',
+        'generate-sitemap.js'
+    )
     with open(generator_path, 'r') as f:
         content = f.read()
     

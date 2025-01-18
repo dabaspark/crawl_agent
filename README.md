@@ -13,6 +13,21 @@ A simple crawler that converts Documentation Websites into markdown files. Built
 - **aiohttp**: For handling async HTTP requests
 - **lxml**: XML parsing for sitemaps
 
+## Project Structure
+```
+crawler-agent/
+├── website_to_markdown.py  # Main script
+├── config.py              # Configuration
+├── requirements.txt       # Python dependencies
+├── output/               # Generated markdown files
+│   ├── pages/           # Individual pages
+│   ├── collected.md     # Combined output
+│   └── status.md        # Crawling status
+└── sitemap_generator/    # Sitemap generation tools
+    └── simple_generator/ # Node.js sitemap generator
+        └── generate-sitemap.js
+```
+
 ## Setup
 
 ```bash
@@ -20,11 +35,13 @@ A simple crawler that converts Documentation Websites into markdown files. Built
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Install Node.js dependencies (for sitemap generation)
-npm install -g sitemap-generator
+# Install Node.js sitemap generator
+cd sitemap_generator/simple_generator
+npm install sitemap-generator
+cd ../..
 ```
 
 ## Output Structure
@@ -95,4 +112,27 @@ The status.md file shows:
 - website should not use dynamic javascript or modern framework (ex. React) to be able to generate sitemap.xml
 - JavaScript-rendered content might need extra wait time to crawl
 - Large sites might need adjustment of concurrent request limits
+
+## Troubleshooting
+
+### Sitemap Generation Issues
+If the sitemap generator freezes:
+
+1. Navigate to the generator directory:
+```bash
+cd sitemap_generator/simple_generator
+```
+
+2. Reinstall dependencies:
+```bash
+rm -rf node_modules package-lock.json
+npm install
+```
+
+3. Test the generator directly:
+```bash
+node generate-sitemap.js
+```
+
+The generator should show progress with URL counts and complete with a success message.
 
