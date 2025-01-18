@@ -54,6 +54,17 @@ MAX_CONCURRENT_REQUESTS = 5  # Adjust based on your needs
 DEFAULT_OUTPUT_DIR = "output"
 ```
 
+## Features
+
+- Progress tracking with status bars
+- Detailed statistics including:
+  - Success rate
+  - Total pages crawled
+  - Word count
+  - Failure analysis
+- Parallel processing with visual progress
+- Combined output with status tracking
+
 ## Notes
 
 - Uses async/await for concurrent processing
@@ -68,6 +79,15 @@ The status.md file shows:
 - URL processed
 - Success/failure status
 - Output filename
+
+## Statistics
+
+The status.md file includes:
+- Overall success rate
+- Total pages processed
+- Word counts
+- Failure analysis
+- Detailed crawl log
 
 ## Known limitations:
 
