@@ -176,12 +176,18 @@ async def crawl_parallel(urls: List[str], output_dir: str):
     finally:
         await crawler.close()
 
-def get_sitemap_urls(sitemap_path: str) -> List[str]:
+def get_sitemap_urls(sitemap_location: str) -> List[str]:
     """Get URLs from website sitemap."""
     try:
-        # Just read the file directly if it's a local path
-        with open(sitemap_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        # Handle remote sitemap URLs vs local files
+        if sitemap_location.startswith('http'):
+            response = requests.get(sitemap_location, timeout=REQUEST_TIMEOUT)
+            response.raise_for_status()
+            content = response.text
+        else:
+            # Local file
+            with open(sitemap_location, 'r', encoding='utf-8') as f:
+                content = f.read()
             
         root = ElementTree.fromstring(content)
         
@@ -226,22 +232,96 @@ def generate_sitemap(base_url: str) -> str:
         print(f"Error generating sitemap: {e.stderr}")
         raise
 
+def update_sitemapper_config(url: str):
+    """Update the config.js for sitemapper-for-js."""
+    config_path = os.path.join(
+        os.path.dirname(__file__),
+        'sitemap_generator',
+        'sitemapper-for-js',
+        'config.js'
+    )
+    
+    domain = urlparse(url).netloc + urlparse(url).path.rstrip('/')
+    
+    with open(config_path, 'r') as f:
+        content = f.read()
+    
+    # Update base URL
+    content = re.sub(
+        r"base: '.*'",
+        f"base: '{url}'",
+        content
+    )
+    
+    # Update urls array
+    content = re.sub(
+        r"urls: \[.*?\]",
+        f"urls: ['{url}']",
+        content,
+        flags=re.DOTALL
+    )
+    
+    # Update strictPresence
+    content = re.sub(
+        r"strictPresence: '.*'",
+        f"strictPresence: '{domain}'",
+        content
+    )
+    
+    with open(config_path, 'w') as f:
+        f.write(content)
+
+def generate_sitemap_advanced(base_url: str) -> str:
+    """Generate sitemap using sitemapper-for-js for dynamic websites."""
+    print("Attempting advanced sitemap generation...")
+    generator_dir = os.path.join(os.path.dirname(__file__), 'sitemap_generator', 'sitemapper-for-js')
+    
+    try:
+        # Update config with current URL
+        update_sitemapper_config(base_url)
+        
+        # Run the advanced generator
+        result = subprocess.run(
+            ['npm', 'start'],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=generator_dir
+        )
+        print(result.stdout)
+        return os.path.join(generator_dir, 'sitemap.xml')
+    except subprocess.CalledProcessError as e:
+        print(f"Error generating sitemap with advanced generator: {e.stderr}")
+        raise
+
 async def main():
     print(f"Processing website: {BASE_URL}")
     print(f"Output directory: {OUTPUT_DIR}")
     
-    # Check for sitemap.xml
+    # Try existing sitemap first
     if check_sitemap_exists(BASE_URL):
         sitemap_url = urljoin(BASE_URL, 'sitemap.xml')
         print(f"Found existing sitemap at: {sitemap_url}")
-        urls = get_sitemap_urls(sitemap_url)
+        try:
+            urls = get_sitemap_urls(sitemap_url)
+            print(f"Successfully parsed remote sitemap")
+        except Exception as e:
+            print(f"Error with remote sitemap: {e}")
+            urls = []
     else:
-        print("No sitemap.xml found. Generating one...")
+        # Try simple generator first
+        print("No sitemap.xml found. Trying simple generator...")
         update_generator_url(BASE_URL)
         sitemap_path = generate_sitemap(BASE_URL)
         print(f"Generated sitemap at: {sitemap_path}")
-        # Read directly from the generated file
         urls = get_sitemap_urls(sitemap_path)
+        
+        # If simple generator didn't find enough URLs, try advanced generator
+        if len(urls) <= 2:
+            print("Simple generator failed to find enough URLs. Trying advanced generator...")
+            sitemap_path = generate_sitemap_advanced(BASE_URL)
+            print(f"Generated advanced sitemap at: {sitemap_path}")
+            urls = get_sitemap_urls(sitemap_path)
     
     # Create output directory if it doesn't exist
     os.makedirs(OUTPUT_DIR, exist_ok=True)
