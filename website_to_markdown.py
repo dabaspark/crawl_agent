@@ -2,21 +2,23 @@ import os
 import sys
 import asyncio
 import requests
+import subprocess
 from xml.etree import ElementTree
 from typing import List, Dict
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from datetime import datetime
 from tqdm.asyncio import tqdm
 from collections import Counter
 from dataclasses import dataclass, field
+import re  # Add this import at the top
 
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 from config import (
     MAX_CONCURRENT_REQUESTS, 
     BROWSER_CONFIG, 
     REQUEST_TIMEOUT,
-    DEFAULT_SITEMAP_URL,
-    DEFAULT_OUTPUT_DIR
+    BASE_URL,
+    OUTPUT_DIR
 )
 
 @dataclass
@@ -174,43 +176,97 @@ async def crawl_parallel(urls: List[str], output_dir: str):
     finally:
         await crawler.close()
 
-def get_sitemap_urls(sitemap_url: str) -> List[str]:
+def get_sitemap_urls(sitemap_path: str) -> List[str]:
     """Get URLs from website sitemap."""
     try:
-        response = requests.get(sitemap_url, timeout=REQUEST_TIMEOUT)
-        response.raise_for_status()
+        # Just read the file directly if it's a local path
+        with open(sitemap_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            
+        root = ElementTree.fromstring(content)
         
-        # Parse the XML
-        root = ElementTree.fromstring(response.content)
+        # Try standard sitemap format first
+        urls = root.findall(".//url/loc")
+        if not urls:
+            # Try alternate namespace format
+            namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+            urls = root.findall('.//ns:loc', namespace)
         
-        # Extract all URLs from the sitemap
-        namespace = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-        urls = [loc.text for loc in root.findall('.//ns:loc', namespace)]
-        
-        return urls
+        return [url.text for url in urls if url.text]
     except Exception as e:
-        print(f"Error fetching sitemap: {e}")
+        print(f"Error reading sitemap: {e}")
         return []
 
-async def main():
-    sitemap_url = DEFAULT_SITEMAP_URL
-    output_dir = DEFAULT_OUTPUT_DIR
+def check_sitemap_exists(base_url: str) -> bool:
+    """Check if sitemap.xml exists at the given URL."""
+    sitemap_url = urljoin(base_url, 'sitemap.xml')
+    try:
+        response = requests.head(sitemap_url, timeout=REQUEST_TIMEOUT)
+        return response.status_code == 200
+    except Exception:
+        return False
+
+def generate_sitemap(base_url: str) -> str:
+    """Generate sitemap.xml using Node.js script."""
+    print("Generating sitemap.xml...")
+    sitemap_dir = os.path.join(os.path.dirname(__file__), 'sitemap')
+    os.makedirs(sitemap_dir, exist_ok=True)
     
-    print(f"Using default settings:")
-    print(f"Sitemap URL: {sitemap_url}")
-    print(f"Output directory: {output_dir}")
+    try:
+        result = subprocess.run(
+            ['node', 'generate-sitemap.js'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        print(result.stdout)
+        return os.path.join(sitemap_dir, 'sitemap.xml')
+    except subprocess.CalledProcessError as e:
+        print(f"Error generating sitemap: {e.stderr}")
+        raise
+
+async def main():
+    print(f"Processing website: {BASE_URL}")
+    print(f"Output directory: {OUTPUT_DIR}")
+    
+    # Check for sitemap.xml
+    if check_sitemap_exists(BASE_URL):
+        sitemap_url = urljoin(BASE_URL, 'sitemap.xml')
+        print(f"Found existing sitemap at: {sitemap_url}")
+        urls = get_sitemap_urls(sitemap_url)
+    else:
+        print("No sitemap.xml found. Generating one...")
+        update_generator_url(BASE_URL)
+        sitemap_path = generate_sitemap(BASE_URL)
+        print(f"Generated sitemap at: {sitemap_path}")
+        # Read directly from the generated file
+        urls = get_sitemap_urls(sitemap_path)
     
     # Create output directory if it doesn't exist
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # Get URLs from sitemap
-    urls = get_sitemap_urls(sitemap_url)
     if not urls:
         print("No URLs found to crawl")
         return
     
     print(f"Found {len(urls)} URLs to crawl")
-    await crawl_parallel(urls, output_dir)
+    await crawl_parallel(urls, OUTPUT_DIR)
+
+def update_generator_url(url: str):
+    """Update the URL in generate-sitemap.js."""
+    generator_path = os.path.join(os.path.dirname(__file__), 'generate-sitemap.js')
+    with open(generator_path, 'r') as f:
+        content = f.read()
+    
+    # Replace the URL in the JavaScript file using Python's re
+    updated_content = re.sub(
+        r"const url = '.*';",
+        f"const url = '{url}';",
+        content
+    )
+    
+    with open(generator_path, 'w') as f:
+        f.write(updated_content)
 
 if __name__ == "__main__":
     asyncio.run(main())

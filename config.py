@@ -6,11 +6,9 @@ BROWSER_CONFIG = {
     "extra_args": ["--disable-gpu", "--disable-dev-shm-usage", "--no-sandbox"]
 }
 
-# File System Configuration
-DEFAULT_OUTPUT_DIR = "output"
-
-# URL Configuration
-DEFAULT_SITEMAP_URL = "https://ai.pydantic.dev/sitemap.xml"  # Changed to a real example
+# Fixed defaults (edit these values to change target site and output location)
+BASE_URL = "http://adjtomo.github.io/pyflex/"
+OUTPUT_DIR = "output"
 
 # Request Configuration
 REQUEST_TIMEOUT = 30  # seconds
