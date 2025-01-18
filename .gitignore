@@ -6,4 +6,5 @@ node_modules/
 package-lock.json
 package.json
 sitemap/
-# sitemap-generator/
+sitemap-generator/
+sitemap_generator/sitemapper-for-js
