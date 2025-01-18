@@ -112,8 +112,8 @@ The status.md file includes:
 
 ## Known limitations:
 
-- Requires a valid sitemap.xml
-- JavaScript-rendered content might need extra wait time
+- website should not use dynamic javascript or modern framework to be able to generate sitemap.xml
+- JavaScript-rendered content might need extra wait time to crawl
 - Large sites might need adjustment of concurrent request limits
 
 ## How it Works
