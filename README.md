@@ -13,20 +13,6 @@ A simple crawler that converts Documentation Websites into markdown files. Built
 - **aiohttp**: For handling async HTTP requests
 - **lxml**: XML parsing for sitemaps
 
-## Project Structure
-```
-crawler-agent/
-├── website_to_markdown.py  # Main script
-├── config.py              # Configuration
-├── requirements.txt       # Python dependencies
-├── output/               # Generated markdown files
-│   ├── pages/           # Individual pages
-│   ├── collected.md     # Combined output
-│   └── status.md        # Crawling status
-└── sitemap_generator/    # Sitemap generation tools
-    └── simple_generator/ # Node.js sitemap generator
-        └── generate-sitemap.js
-```
 
 ## Setup
 
@@ -107,6 +93,23 @@ The status.md file shows:
 - URL processed
 - Success/failure status
 - Output filename
+
+
+## Project Structure
+```
+crawler-agent/
+├── website_to_markdown.py  # Main script
+├── config.py              # Configuration
+├── requirements.txt       # Python dependencies
+├── output/               # Generated markdown files
+│   ├── pages/           # Individual pages
+│   ├── collected.md     # Combined output
+│   └── status.md        # Crawling status
+└── sitemap_generator/    # Sitemap generation tools
+    └── simple_generator/ # Node.js sitemap generator
+        └── generate-sitemap.js
+```
+
 
 ## Known limitations:
 
