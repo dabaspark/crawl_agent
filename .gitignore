@@ -3,8 +3,6 @@ output/
 __pycache__/
 docs/
 node_modules/
-package-lock.json
-package.json
 sitemap/
 sitemap_generator/simple_generator/sitemap.xml
 
